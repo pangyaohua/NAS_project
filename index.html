@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<title>星云存储平台</title>
+		<script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+
+	</head>
+	<style>
+		html {
+			width: 100%;
+			height: 100%;
+		}
+		
+		body {
+			width: 100%;
+			height: 100%;
+			background: url(left.png) no-repeat;
+			background-size: 35% 100%;
+		}
+		h2{
+			font-weight:bold;
+		}
+		li {
+			list-style: none;
+			margin-bottom: 20px;
+		}
+		
+		li p {
+			padding: 8px;
+			margin: 0;
+		}
+		
+		input {
+			width: 100%;
+			padding: 10px;
+		}
+		
+		.check {
+			/*background: #454523;*/
+			background: mediumpurple;
+			color: #fff;
+		}
+		
+		img {
+			width: 100%;
+			height: 100%;
+			position: absolute;
+		}
+		
+		.hidden {
+			display: none;
+		}
+		
+		img {
+			width: 12%;
+			height: auto;
+			position: absolute;
+			right: 6%;
+			top: 9%;
+			transform: rotate3d;
+			transform: 10deg;
+			transform: rotate(35deg);
+		}
+		
+		.main {
+			width: 70%;
+			height: auto;
+			margin-left: 15%;
+			margin-right: 15%;
+			padding-top: 4%;
+		}
+	</style>
+
+	<body class="bg-light">
+		<!--图片-->
+		<img src="heart.png" alt="" />
+		<!--音乐-->
+
+		<!--<audio controls="controls">
+			<source src="/i/song.ogg" type="audio/ogg">
+			<source src="/i/song.mp3" type="audio/mpeg"> Your browser does not support the audio element.
+		</audio>-->
+		<header>
+			<div class="navbar navbar-dark bg-dark box-shadow ">
+				<h1 style="font-size:25px;text-align:center;font-family: '微软雅黑';">存储心愿盒</h1>
+			</div>
+		</header>
+
+		<main class="main" style="">
+			<h2 style="width:100%;padding-left:40px;font-size:16px;padding-bottom:10px;">功能模块</h2>
+			<ul style="margin-bottom:40px;">
+				<li style="margin-bottom:15px;" class="list-group-item saveShow check">心愿存储</li>
+				<li class="list-group-item findShow">个人中心</li>
+			</ul>
+			<h2 style="width:100%;padding-left:40px;font-size:16px;padding-bottom:10px;">信息模块</h2>
+			<div class="left">
+				<ul class="saveBox">
+					<li>
+						<input data-msg="名字或唯一或属于你的唯一标识" type="text" class="required name" placeholder="输入属于你自己的标识,便于日后查找心愿" />
+					</li>
+					<li>
+						<input data-msg="心愿" type="text" class="required wash" placeholder="输入你得心愿" />
+					</li>
+					<li style="padding:10 0px;">
+						<label style="font-family: inherit;" for="">你想要加密你的心愿嘛****输入密码可进行加密</label>
+					</li>
+					<li>
+						<input data-msg="密码" class="pwd" type="password" placeholder="输入密码" />
+					</li>
+					<button style="padding:12px;width:100%;margin-top:20px;" class="save">存储</button>
+				</ul>
+				<ul class="findBox hidden">
+					<li>
+						<input data-msg="心愿" type="text" class="findName" placeholder="输入您的唯一标识进行查找" />
+					</li>
+					<li>
+						<input data-msg="" type="text" class="findPwd" placeholder="输入密码" />
+					</li>
+					<li>
+						<div class="list" style="display: none;">
+							<p>心愿列表：</p>
+							<p class=""><span>名字：</span><span class="resultName"></span></p>
+							<p class=""><span>心愿：</span><span class="resultWash"></span></p>
+						</div>
+					</li>
+					<button style="padding:12px;width:100%;margin-top:20px;" class="find">查找</button>
+				</ul>
+			</div>
+			<div class="right">
+
+			</div>
+		</main>
+
+		<footer class="text-muted">
+			<div class="container align-middle text-center" style="height: 60px; line-height: 60px;">
+
+			</div>
+		</footer>
+	</body>
+
+	<script type="text/javascript" src="./dist/nebulas.js"></script>
+
+	<script type="text/javascript" src="./dist/nebPay.js"></script>
+	<script src="./dist/size.js"></script>
+	<script>
+		'use strict';
+		var dappContactAddress = "n1nukoemP317k9QPDbHfNuK42ctC3k9fwqf";
+
+		var nebulas = require("nebulas"),
+			Account = nebulas.Account,
+			neb = new nebulas.Neb();
+		console.log(nebulas);
+		neb.setRequest(new nebulas.HttpRequest("https://testnet.nebulas.io"))//test-main
+
+		var NebPay = require("nebpay");
+		var nebPay = new NebPay();
+
+		var serialNumber;
+
+		var name;
+		var wash;
+		var pwd;
+		//存储信息
+		$(".save").click(function() {
+			name = $(".name").val();
+			wash = $(".wash").val();
+			pwd = $(".pwd").val();
+			if($("input[type='checkbox']").is(":checked")) {
+				$(".pwd").addClass("required");
+			} else {
+				$(".pwd").removeClass("required");
+			}
+			alert("save");
+			saveData();
+		})
+		$(".find").click(function() {
+			getData($(".findName").val(), $(".findPwd").val());
+		})
+		//调用合约借口保存对应信息
+		function saveData() {
+			var to = dappContactAddress;
+			var value = "0";
+			var callFunction = "save";
+			var callArgs = "[\"" + name + "\",\"" + wash + "\",\"" + pwd + "\"]";
+			console.log(callArgs);
+			var contract = {
+				"function": callFunction,
+				"args": callArgs
+			}
+			serialNumber = nebPay.call(to, value, callFunction, callArgs, { //使用nebpay的call接口去调用合约,
+				listener: function(resp) {
+					console.log("thecallback is " + resp);
+					alert("保存成功");
+				}
+			});
+		}
+		var findName, findPwd;
+		//获取数值方法
+		function getData(valName, valPwd) {
+			// 地址和密码格式都正确,发送请求
+			var from = Account.NewAccount().getAddressString();
+			findName = valName;
+			findPwd = valPwd;
+			var value = "0";
+			var nonce = "0"
+			var gas_price = "1000000"
+			var gas_limit = "2000000"
+			var callFunction = "get";
+			var callArgs = "[\"" + findName + "\",\"" + findPwd + "\"]";
+			console.log(callArgs);
+			var contract = {
+				"function": callFunction,
+				"args": callArgs
+			}
+			neb.api.call(from, dappContactAddress, value, nonce, gas_price, gas_limit, contract).then(function(resp) {
+				console.log(resp);
+				var result = resp.result;
+				console.log(result);
+				$(".resultName").text(JSON.parse(result).name);
+				$(".resultWash").text(JSON.parse(result).wash);
+				$(".list").show();
+			}).catch(function(err) {
+				console.log("error :" + err.message);
+			})
+		}
+
+		$(".saveShow").click(function() {
+			$(this).addClass("check").siblings("li").removeClass("check");
+			$(".saveBox").removeClass("hidden");
+			$(".findBox").addClass("hidden");
+		})
+		$(".findShow").click(function() {
+			$(this).addClass("check").siblings("li").removeClass("check");
+			$(".findBox").removeClass("hidden");
+			$(".saveBox").addClass("hidden");
+		})
+	</script>
+
+</html>
